@@ -1,0 +1,112 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: white;
+    margin: 0;
+    padding: 0;
+}
+
+h1 {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 26px;
+}
+
+.container {
+    padding: 15px;
+}
+
+/* Input panel */
+.settings, .kart-list {
+    background: #222;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.settings label, .kart-list label {
+    display: block;
+    margin-top: 8px;
+    font-size: 16px;
+}
+
+input, select {
+    width: 100%;
+    font-size: 18px;
+    padding: 8px;
+    margin-top: 5px;
+    border-radius: 8px;
+    border: none;
+}
+
+button {
+    margin-top: 10px;
+    width: 100%;
+    padding: 12px;
+    font-size: 20px;
+    background: #0a84ff;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: bold;
+}
+
+button:active {
+    background: #006be6;
+}
+
+/* Manual kart list */
+.kart-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #444;
+}
+
+.kart-color-box {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 2px solid white;
+}
+
+/* Pit rows */
+.pit-area {
+    margin-top: 20px;
+}
+
+.pit-row {
+    background: #222;
+    padding: 10px;
+    margin-bottom: 14px;
+    border-radius: 10px;
+}
+
+.pit-title {
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.slot-container {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+}
+
+.kart-slot {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    background: #444;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.add-btn {
+    margin-top: 10px;
+    background: #28c53a;
+}
