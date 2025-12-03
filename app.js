@@ -1,10 +1,9 @@
-/* Manual Pit Lane — squares layout
-   - Rows are horizontal (pit columns)
-   - Each column stacks kart squares vertically
-   - Manual kart list with colors
-   - Insert (shift) behavior: shift up (remove first), push new kart to bottom
-   - Unknown kart => gray background
-*/
+// Manual pit - prefilled karts version
+// Behavior:
+// - Pit rows are prefilled with placeholder karts U1..UN with default color (blue).
+// - You can add manual kart colors (kart number -> color).
+// - Press + on a column: prompt for kart number, shift that column (remove first), push new kart (with number) to end.
+// - If a pushed kart number has a manual color, it is shown; otherwise the default placeholder color is used.
 
 const rowsInput = document.getElementById('rowsInput');
 const slotsInput = document.getElementById('slotsInput');
@@ -13,40 +12,43 @@ const addKartBtn = document.getElementById('addKartBtn');
 const kartNumberInput = document.getElementById('kartNumberInput');
 const kartColorInput = document.getElementById('kartColorInput');
 const statusEl = document.getElementById('status');
+const pitRowsEl = document.getElementById('pitRows');
+const kartListDisplay = document.getElementById('kartListDisplay');
 
-let manualKartColors = {}; // map 'kartNumber' -> color string
-let pitData = []; // array of rows: pitData[rowIndex] = [ slotObj or null, ... ]
+let manualKartColors = {}; // '12' -> '#ff0000'
+let pitData = []; // pitData[rowIndex] = [ slotObj, ... ]
+const DEFAULT_PLACEHOLDER_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--unknown-gray').trim() || '#2b6cb0';
 
-// wire buttons
 generateBtn.addEventListener('click', generatePit);
 addKartBtn.addEventListener('click', addKartToList);
 
-// initial generate
+// initial
 generatePit();
 
-function setStatus(s){
-  statusEl.textContent = s;
-}
+function setStatus(s){ statusEl.textContent = s; }
 
-/* Generate pit layout with given rows & slots */
 function generatePit(){
   const rows = Math.max(1, parseInt(rowsInput.value) || 1);
   const slots = Math.max(1, parseInt(slotsInput.value) || 1);
 
   pitData = [];
+  let uid = 1;
   for(let r=0;r<rows;r++){
     const row = [];
     for(let s=0;s<slots;s++){
-      row.push(null); // empty slot
+      // placeholder physical kart
+      row.push({
+        id: `U${uid++}`,   // unique physical kart id
+        number: null,     // not assigned to a team yet
+        color: DEFAULT_PLACEHOLDER_COLOR
+      });
     }
     pitData.push(row);
   }
-  renderPit();
-  renderKartList();
-  setStatus(`Created ${rows} rows × ${slots} slots`);
+  renderAll();
+  setStatus(`Created ${rows} rows × ${slots} slots (placeholders prefilled)`);
 }
 
-/* Add or update manual kart color */
 function addKartToList(){
   const num = (kartNumberInput.value || '').trim();
   const color = kartColorInput.value;
@@ -56,97 +58,87 @@ function addKartToList(){
   }
   manualKartColors[num] = color;
   renderKartList();
+  renderAll(); // update any slots showing that kart number
   setStatus(`Kart ${num} color saved`);
 }
 
-/* Render manual kart list */
 function renderKartList(){
-  const display = document.getElementById('kartListDisplay');
-  display.innerHTML = '';
+  kartListDisplay.innerHTML = '';
   const keys = Object.keys(manualKartColors).sort((a,b)=> +a - +b);
   if(keys.length === 0){
-    display.innerHTML = '<div style="color:var(--muted)">No manual karts yet</div>';
+    kartListDisplay.innerHTML = '<div style="color:var(--muted)">No manual karts yet</div>';
     return;
   }
-  keys.forEach(k => {
-    const entry = document.createElement('div');
-    entry.className = 'kart-entry';
-    const label = document.createElement('div'); label.className='label'; label.textContent = `Kart ${k}`;
-    const sw = document.createElement('div'); sw.className='swatch'; sw.style.background = manualKartColors[k];
+  keys.forEach(k=>{
+    const entry = document.createElement('div'); entry.className = 'kart-entry';
+    const label = document.createElement('div'); label.className = 'label'; label.textContent = `Kart ${k}`;
+    const sw = document.createElement('div'); sw.className = 'swatch'; sw.style.background = manualKartColors[k];
     entry.appendChild(label); entry.appendChild(sw);
-    display.appendChild(entry);
+    kartListDisplay.appendChild(entry);
   });
 }
 
-/* Render pit columns (rows horizontally) */
+function renderAll(){
+  renderPit();
+  renderKartList();
+}
+
 function renderPit(){
-  const container = document.getElementById('pitRows');
-  container.innerHTML = '';
-
-  pitData.forEach((row, rIdx) => {
-    const col = document.createElement('div');
-    col.className = 'pit-column';
-
-    const title = document.createElement('div');
-    title.className = 'col-title';
-    title.textContent = `Row ${rIdx + 1}`;
+  pitRowsEl.innerHTML = '';
+  pitData.forEach((row, rIdx)=>{
+    const col = document.createElement('div'); col.className = 'pit-column';
+    const title = document.createElement('div'); title.className = 'col-title'; title.textContent = `Row ${rIdx+1}`;
     col.appendChild(title);
 
-    // slots: stack vertically top->bottom (first = top)
-    row.forEach((slot, sIdx) => {
-      const slotEl = document.createElement('div');
-      slotEl.className = 'kart-slot';
-
-      if(slot && slot.number){
+    row.forEach(slot=>{
+      const slotEl = document.createElement('div'); slotEl.className = 'kart-slot';
+      if(slot.number){
         slotEl.textContent = slot.number;
-        // color from manual list or gray if unknown
-        const color = manualKartColors[slot.number] || 'var(--unknown-gray)';
+        const color = manualKartColors[slot.number] || slot.color || DEFAULT_PLACEHOLDER_COLOR;
         slotEl.style.background = color;
-        // choose text color contrast (dark text for bright colors)
+        // choose text color based on bg
         slotEl.style.color = getContrastColor(color);
       } else {
-        slotEl.textContent = '-';
-        slotEl.style.background = 'var(--slot-gray)';
+        slotEl.textContent = slot.id; // show placeholder id
+        slotEl.style.background = slot.color || DEFAULT_PLACEHOLDER_COLOR;
+        slotEl.classList.add('empty');
         slotEl.style.color = '#fff';
       }
-
       col.appendChild(slotEl);
     });
 
-    // add button under column
-    const addBtn = document.createElement('button');
-    addBtn.className = 'col-add-btn';
-    addBtn.textContent = '+ Add Kart (team enters this row)';
-    addBtn.onclick = () => onAddClick(rIdx);
+    const addBtn = document.createElement('button'); addBtn.className = 'col-add-btn'; addBtn.textContent = '+ Add Kart (enter team number)';
+    addBtn.onclick = ()=> onAddClick(rIdx);
     col.appendChild(addBtn);
-
-    container.appendChild(col);
+    pitRowsEl.appendChild(col);
   });
 }
 
-/* Called when user presses + for a row */
 function onAddClick(rowIndex){
-  const kartNum = prompt('Enter kart number to add (this will be pushed into the row):');
-  if(kartNum === null) return; // cancel
+  const kartNum = prompt('Enter kart number (team number) to add:');
+  if(kartNum === null) return;
   const num = kartNum.trim();
   if(!num) return;
 
-  // create slot object
-  const slotObj = { number: num };
+  // create a new kart object using manual color if available; otherwise use default placeholder blue
+  const newSlot = {
+    id: `K${num}-${Date.now()}`,
+    number: num,
+    color: manualKartColors[num] || DEFAULT_PLACEHOLDER_COLOR
+  };
 
   // shift: remove first element, push new to bottom
   pitData[rowIndex].shift();
-  pitData[rowIndex].push(slotObj);
+  pitData[rowIndex].push(newSlot);
 
-  renderPit();
-  setStatus(`Inserted kart ${num} into row ${rowIndex+1}`);
+  renderAll();
+  setStatus(`Inserted kart ${num} into Row ${rowIndex+1}`);
 }
 
-/* helper: choose readable text color depending on background */
+/* contrast color helper */
 function getContrastColor(bg){
-  // if bg is a CSS variable name
+  if(!bg) return '#fff';
   if(bg.startsWith('var(')) return '#fff';
-  // parse hex
   try{
     let c = bg.replace('#','');
     if(c.length === 3) c = c.split('').map(ch=>ch+ch).join('');
@@ -157,7 +149,3 @@ function getContrastColor(bg){
     return '#fff';
   }
 }
-
-/* initialize with default */
-generatePit();
-
