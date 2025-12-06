@@ -1,48 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Manual Pit Lane — Prefilled</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <title>Apex Timing Mapper + Team/Kart Tracker</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <h1>Manual Pit Lane — Prefilled</h1>
-  </header>
 
-  <main class="container">
-    <section class="controls card">
-      <div class="control-row">
-        <label>Number of rows</label>
-        <input id="rowsInput" type="number" min="1" value="3">
-        <label>Karts per row</label>
-        <input id="slotsInput" type="number" min="1" value="5">
-        <button id="generateBtn">Generate Pit Layout</button>
-      </div>
+<h1>Apex Live Timing Connection</h1>
 
-      <div class="control-row">
-        <label>Kart number (for manual color)</label>
-        <input id="kartNumberInput" type="text" placeholder="e.g. 12">
-        <label>Choose color</label>
-        <input id="kartColorInput" type="color" value="#1E90FF">
-        <button id="addKartBtn">Add / Update Kart Color</button>
-      </div>
+<div class="card">
+    <label>ApexTimings CSV / JSON URL:</label>
+    <input id="apexUrl" placeholder="https://example.com/live.csv">
 
-      <div id="status" class="status">Ready</div>
-    </section>
+    <button onclick="loadApexData()">Load Apex Data</button>
+</div>
 
-    <section class="pit-area card">
-      <h2>Pit Visualization</h2>
-      <div id="pitRows" class="pit-rows"></div>
-    </section>
+<h2>Step 2 — Map the Columns</h2>
+<div id="mappingArea" class="card hidden"></div>
 
-    <section class="kart-list card">
-      <h2>Manual Kart List</h2>
-      <div id="kartListDisplay" class="kart-list-display"></div>
-    </section>
-  </main>
+<h2>Step 3 — Live Timing Table</h2>
+<div id="liveTableArea" class="card"></div>
 
-  <script src="app.js"></script>
+<h2>Team → Kart Assignment (Automatic)</h2>
+<div id="teamKartList" class="card"></div>
+
+<script src="script.js"></script>
 </body>
 </html>
