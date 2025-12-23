@@ -11,10 +11,22 @@
 <h1>Pit Lane Kart Tracker</h1>
 
 <div class="setup">
-  <h2>Initial Setup</h2>
 
-  <label>Teams (one per line, format: Team Name | Number)</label>
-  <textarea id="teamsInput" placeholder="Team Alpha | 12&#10;Team Beta | 27"></textarea>
+  <h2>Team Setup</h2>
+
+  <label>Team Name</label>
+  <input id="teamNameInput" placeholder="Team Alpha" />
+
+  <label>Team Number</label>
+  <input id="teamNumberInput" placeholder="27" />
+
+  <button onclick="addTeam()">Add Team</button>
+
+  <div id="teamSetupList"></div>
+
+  <hr />
+
+  <h2>Pit Setup</h2>
 
   <label>Number of Pit Rows</label>
   <input type="number" id="rowCount" value="3" min="1" />
@@ -22,7 +34,8 @@
   <label>Karts per Row</label>
   <input type="number" id="kartsPerRow" value="3" min="1" />
 
-  <button onclick="initialize()">Initialize</button>
+  <button onclick="initialize()">Initialize Pit Lane</button>
+
 </div>
 
 <div class="main hidden" id="main">
