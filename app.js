@@ -8,21 +8,48 @@ let kartIdCounter = 1;
 
 const colors = ["blue", "red", "orange", "yellow", "green", "purple"];
 
+function addTeam() {
+  const name = document.getElementById("teamNameInput").value.trim();
+  const number = document.getElementById("teamNumberInput").value.trim();
+
+  if (!name || !number) {
+    alert("Enter both team name and number");
+    return;
+  }
+
+  teams.push({ name, number });
+  document.getElementById("teamNameInput").value = "";
+  document.getElementById("teamNumberInput").value = "";
+  renderTeamSetup();
+}
+
+function removeTeam(index) {
+  teams.splice(index, 1);
+  renderTeamSetup();
+}
+
+function renderTeamSetup() {
+  const list = document.getElementById("teamSetupList");
+  list.innerHTML = "";
+
+  teams.forEach((t, i) => {
+    const div = document.createElement("div");
+    div.className = "setup-team";
+    div.innerHTML = `${t.name} (#${t.number}) <span class="remove" onclick="removeTeam(${i})">✖</span>`;
+    list.appendChild(div);
+  });
+}
+
 function initialize() {
-  teams = [];
   teamHistory = {};
   teamCurrentKart = {};
   pitRows = [];
   kartIdCounter = 1;
   selectedTeam = null;
 
-  const teamLines = document.getElementById("teamsInput").value.split("\n");
-  teamLines.forEach(line => {
-    if (!line.trim()) return;
-    const [name, number] = line.split("|").map(s => s.trim());
-    teams.push({ name, number });
-    teamHistory[name] = [];
-    teamCurrentKart[name] = null;
+  teams.forEach(t => {
+    teamHistory[t.name] = [];
+    teamCurrentKart[t.name] = null;
   });
 
   const rowCount = parseInt(document.getElementById("rowCount").value);
@@ -31,20 +58,13 @@ function initialize() {
   for (let r = 0; r < rowCount; r++) {
     let row = [];
     for (let k = 0; k < kartsPerRow; k++) {
-      row.push(createKart());
+      row.push({ id: kartIdCounter++, color: "blue" });
     }
     pitRows.push(row);
   }
 
   document.getElementById("main").classList.remove("hidden");
   render();
-}
-
-function createKart() {
-  return {
-    id: kartIdCounter++,
-    color: "blue"
-  };
 }
 
 function render() {
@@ -57,12 +77,12 @@ function renderTeams() {
   const list = document.getElementById("teamList");
   list.innerHTML = "";
 
-  teams.forEach(team => {
+  teams.forEach(t => {
     const div = document.createElement("div");
-    div.className = "team" + (selectedTeam === team.name ? " active" : "");
-    div.textContent = `${team.name} (#${team.number})`;
+    div.className = "team" + (selectedTeam === t.name ? " active" : "");
+    div.textContent = `${t.name} (#${t.number})`;
     div.onclick = () => {
-      selectedTeam = team.name;
+      selectedTeam = t.name;
       render();
     };
     list.appendChild(div);
@@ -81,11 +101,11 @@ function renderPits() {
     rowDiv.className = "pit-row";
 
     row.forEach(kart => {
-      const kartDiv = document.createElement("div");
-      kartDiv.className = `kart ${kart.color}`;
-      kartDiv.textContent = kart.id;
-      kartDiv.onclick = () => changeKartColor(kart);
-      rowDiv.appendChild(kartDiv);
+      const div = document.createElement("div");
+      div.className = `kart ${kart.color}`;
+      div.textContent = kart.id;
+      div.onclick = () => cycleColor(kart);
+      rowDiv.appendChild(div);
     });
 
     const plus = document.createElement("div");
@@ -100,9 +120,8 @@ function renderPits() {
   pitLane.appendChild(container);
 }
 
-function changeKartColor(kart) {
-  const next = (colors.indexOf(kart.color) + 1) % colors.length;
-  kart.color = colors[next];
+function cycleColor(kart) {
+  kart.color = colors[(colors.indexOf(kart.color) + 1) % colors.length];
   render();
 }
 
@@ -113,7 +132,6 @@ function pitAction(rowIndex) {
   }
 
   const row = pitRows[rowIndex];
-
   const takenKart = row.shift();
 
   if (teamCurrentKart[selectedTeam]) {
@@ -122,7 +140,6 @@ function pitAction(rowIndex) {
 
   teamCurrentKart[selectedTeam] = takenKart;
   teamHistory[selectedTeam].push(takenKart);
-
   render();
 }
 
@@ -151,3 +168,4 @@ function renderHistory() {
 
   content.appendChild(container);
 }
+
