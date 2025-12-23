@@ -1,151 +1,153 @@
-// Manual pit - prefilled karts version
-// Behavior:
-// - Pit rows are prefilled with placeholder karts U1..UN with default color (blue).
-// - You can add manual kart colors (kart number -> color).
-// - Press + on a column: prompt for kart number, shift that column (remove first), push new kart (with number) to end.
-// - If a pushed kart number has a manual color, it is shown; otherwise the default placeholder color is used.
+let teams = [];
+let teamHistory = {};
+let teamCurrentKart = {};
+let selectedTeam = null;
 
-const rowsInput = document.getElementById('rowsInput');
-const slotsInput = document.getElementById('slotsInput');
-const generateBtn = document.getElementById('generateBtn');
-const addKartBtn = document.getElementById('addKartBtn');
-const kartNumberInput = document.getElementById('kartNumberInput');
-const kartColorInput = document.getElementById('kartColorInput');
-const statusEl = document.getElementById('status');
-const pitRowsEl = document.getElementById('pitRows');
-const kartListDisplay = document.getElementById('kartListDisplay');
+let pitRows = [];
+let kartIdCounter = 1;
 
-let manualKartColors = {}; // '12' -> '#ff0000'
-let pitData = []; // pitData[rowIndex] = [ slotObj, ... ]
-const DEFAULT_PLACEHOLDER_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--unknown-gray').trim() || '#2b6cb0';
+const colors = ["blue", "red", "orange", "yellow", "green", "purple"];
 
-generateBtn.addEventListener('click', generatePit);
-addKartBtn.addEventListener('click', addKartToList);
+function initialize() {
+  teams = [];
+  teamHistory = {};
+  teamCurrentKart = {};
+  pitRows = [];
+  kartIdCounter = 1;
+  selectedTeam = null;
 
-// initial
-generatePit();
+  const teamLines = document.getElementById("teamsInput").value.split("\n");
+  teamLines.forEach(line => {
+    if (!line.trim()) return;
+    const [name, number] = line.split("|").map(s => s.trim());
+    teams.push({ name, number });
+    teamHistory[name] = [];
+    teamCurrentKart[name] = null;
+  });
 
-function setStatus(s){ statusEl.textContent = s; }
+  const rowCount = parseInt(document.getElementById("rowCount").value);
+  const kartsPerRow = parseInt(document.getElementById("kartsPerRow").value);
 
-function generatePit(){
-  const rows = Math.max(1, parseInt(rowsInput.value) || 1);
-  const slots = Math.max(1, parseInt(slotsInput.value) || 1);
-
-  pitData = [];
-  let uid = 1;
-  for(let r=0;r<rows;r++){
-    const row = [];
-    for(let s=0;s<slots;s++){
-      // placeholder physical kart
-      row.push({
-        id: `U${uid++}`,   // unique physical kart id
-        number: null,     // not assigned to a team yet
-        color: DEFAULT_PLACEHOLDER_COLOR
-      });
+  for (let r = 0; r < rowCount; r++) {
+    let row = [];
+    for (let k = 0; k < kartsPerRow; k++) {
+      row.push(createKart());
     }
-    pitData.push(row);
+    pitRows.push(row);
   }
-  renderAll();
-  setStatus(`Created ${rows} rows × ${slots} slots (placeholders prefilled)`);
+
+  document.getElementById("main").classList.remove("hidden");
+  render();
 }
 
-function addKartToList(){
-  const num = (kartNumberInput.value || '').trim();
-  const color = kartColorInput.value;
-  if(!num){
-    alert('Enter kart number');
-    return;
-  }
-  manualKartColors[num] = color;
-  renderKartList();
-  renderAll(); // update any slots showing that kart number
-  setStatus(`Kart ${num} color saved`);
+function createKart() {
+  return {
+    id: kartIdCounter++,
+    color: "blue"
+  };
 }
 
-function renderKartList(){
-  kartListDisplay.innerHTML = '';
-  const keys = Object.keys(manualKartColors).sort((a,b)=> +a - +b);
-  if(keys.length === 0){
-    kartListDisplay.innerHTML = '<div style="color:var(--muted)">No manual karts yet</div>';
-    return;
-  }
-  keys.forEach(k=>{
-    const entry = document.createElement('div'); entry.className = 'kart-entry';
-    const label = document.createElement('div'); label.className = 'label'; label.textContent = `Kart ${k}`;
-    const sw = document.createElement('div'); sw.className = 'swatch'; sw.style.background = manualKartColors[k];
-    entry.appendChild(label); entry.appendChild(sw);
-    kartListDisplay.appendChild(entry);
+function render() {
+  renderTeams();
+  renderPits();
+  renderHistory();
+}
+
+function renderTeams() {
+  const list = document.getElementById("teamList");
+  list.innerHTML = "";
+
+  teams.forEach(team => {
+    const div = document.createElement("div");
+    div.className = "team" + (selectedTeam === team.name ? " active" : "");
+    div.textContent = `${team.name} (#${team.number})`;
+    div.onclick = () => {
+      selectedTeam = team.name;
+      render();
+    };
+    list.appendChild(div);
   });
 }
 
-function renderAll(){
-  renderPit();
-  renderKartList();
-}
+function renderPits() {
+  const pitLane = document.getElementById("pitLane");
+  pitLane.innerHTML = "";
 
-function renderPit(){
-  pitRowsEl.innerHTML = '';
-  pitData.forEach((row, rIdx)=>{
-    const col = document.createElement('div'); col.className = 'pit-column';
-    const title = document.createElement('div'); title.className = 'col-title'; title.textContent = `Row ${rIdx+1}`;
-    col.appendChild(title);
+  const container = document.createElement("div");
+  container.className = "pit-container";
 
-    row.forEach(slot=>{
-      const slotEl = document.createElement('div'); slotEl.className = 'kart-slot';
-      if(slot.number){
-        slotEl.textContent = slot.number;
-        const color = manualKartColors[slot.number] || slot.color || DEFAULT_PLACEHOLDER_COLOR;
-        slotEl.style.background = color;
-        // choose text color based on bg
-        slotEl.style.color = getContrastColor(color);
-      } else {
-        slotEl.textContent = slot.id; // show placeholder id
-        slotEl.style.background = slot.color || DEFAULT_PLACEHOLDER_COLOR;
-        slotEl.classList.add('empty');
-        slotEl.style.color = '#fff';
-      }
-      col.appendChild(slotEl);
+  pitRows.forEach((row, rowIndex) => {
+    const rowDiv = document.createElement("div");
+    rowDiv.className = "pit-row";
+
+    row.forEach(kart => {
+      const kartDiv = document.createElement("div");
+      kartDiv.className = `kart ${kart.color}`;
+      kartDiv.textContent = kart.id;
+      kartDiv.onclick = () => changeKartColor(kart);
+      rowDiv.appendChild(kartDiv);
     });
 
-    const addBtn = document.createElement('button'); addBtn.className = 'col-add-btn'; addBtn.textContent = '+ Add Kart (enter team number)';
-    addBtn.onclick = ()=> onAddClick(rIdx);
-    col.appendChild(addBtn);
-    pitRowsEl.appendChild(col);
+    const plus = document.createElement("div");
+    plus.className = "plus";
+    plus.textContent = "+";
+    plus.onclick = () => pitAction(rowIndex);
+    rowDiv.appendChild(plus);
+
+    container.appendChild(rowDiv);
   });
+
+  pitLane.appendChild(container);
 }
 
-function onAddClick(rowIndex){
-  const kartNum = prompt('Enter kart number (team number) to add:');
-  if(kartNum === null) return;
-  const num = kartNum.trim();
-  if(!num) return;
-
-  // create a new kart object using manual color if available; otherwise use default placeholder blue
-  const newSlot = {
-    id: `K${num}-${Date.now()}`,
-    number: num,
-    color: manualKartColors[num] || DEFAULT_PLACEHOLDER_COLOR
-  };
-
-  // shift: remove first element, push new to bottom
-  pitData[rowIndex].shift();
-  pitData[rowIndex].push(newSlot);
-
-  renderAll();
-  setStatus(`Inserted kart ${num} into Row ${rowIndex+1}`);
+function changeKartColor(kart) {
+  const next = (colors.indexOf(kart.color) + 1) % colors.length;
+  kart.color = colors[next];
+  render();
 }
 
-/* contrast color helper */
-function getContrastColor(bg){
-  if(!bg) return '#fff';
-  if(bg.startsWith('var(')) return '#fff';
-  try{
-    let c = bg.replace('#','');
-    if(c.length === 3) c = c.split('').map(ch=>ch+ch).join('');
-    const r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
-    const yiq = (r*299 + g*587 + b*114)/1000;
-    return (yiq >= 160) ? '#111' : '#fff';
-  }catch(e){
-    return '#fff';
+function pitAction(rowIndex) {
+  if (!selectedTeam) {
+    alert("Select a team first");
+    return;
   }
+
+  const row = pitRows[rowIndex];
+
+  const takenKart = row.shift();
+
+  if (teamCurrentKart[selectedTeam]) {
+    row.push(teamCurrentKart[selectedTeam]);
+  }
+
+  teamCurrentKart[selectedTeam] = takenKart;
+  teamHistory[selectedTeam].push(takenKart);
+
+  render();
+}
+
+function renderHistory() {
+  const title = document.getElementById("historyTitle");
+  const content = document.getElementById("historyContent");
+
+  if (!selectedTeam) {
+    title.textContent = "Team History";
+    content.textContent = "Select a team";
+    return;
+  }
+
+  title.textContent = `History – ${selectedTeam}`;
+  content.innerHTML = "";
+
+  const container = document.createElement("div");
+  container.className = "history-karts";
+
+  teamHistory[selectedTeam].forEach(kart => {
+    const div = document.createElement("div");
+    div.className = `kart ${kart.color}`;
+    div.textContent = kart.id;
+    container.appendChild(div);
+  });
+
+  content.appendChild(container);
 }
