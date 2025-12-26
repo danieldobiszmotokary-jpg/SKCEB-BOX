@@ -1,36 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Pit Lane Tracker</title>
+  <title>Pit Lane Tracker – Guaranteed Working</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: Arial; padding: 10px; }
+    button { padding: 8px; margin: 4px 0; }
+    .team { padding: 6px; background: #3498db; color: white; margin: 4px 0; }
+    .lane { display: flex; gap: 20px; margin-top: 10px; }
+    .row { display: flex; flex-direction: column; align-items: center; }
+    .kart {
+      width: 60px; height: 60px;
+      background: #3498db;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 4px;
+    }
+  </style>
 </head>
 <body>
 
-<h1>Pit Lane Tracker</h1>
+<h1>Pit Lane Tracker (Test)</h1>
 
 <h2>Add Team</h2>
 <input id="teamName" placeholder="Team name">
 <select id="teamKart">
-  <option value="1">1</option>
-  <option value="2">2</option>
-  <option value="3">3</option>
-  <option value="4">4</option>
+  <option>1</option><option>2</option><option>3</option>
+  <option>4</option><option>5</option>
 </select>
 <button onclick="addTeam()">Add Team</button>
 
 <h2>Teams</h2>
-<div id="teamList"></div>
+<div id="teams"></div>
 
 <h2>Pit Lane Setup</h2>
-<input id="rowCount" type="number" placeholder="Rows">
-<input id="kartsPerRow" type="number" placeholder="Karts per row">
-<button onclick="setupPitLane()">Build Pit Lane</button>
+<input id="rows" type="number" placeholder="Rows">
+<input id="perRow" type="number" placeholder="Karts per row">
+<button onclick="buildPit()">Build Pit Lane</button>
 
 <h2>Pit Lane</h2>
-<div id="pitLane"></div>
+<div id="pit" class="lane"></div>
 
-<script src="script.js"></script>
+<script>
+  // GLOBAL STATE
+  let teams = [];
+  let pitRows = [];
+
+  function addTeam() {
+    const name = document.getElementById("teamName").value;
+    const kart = document.getElementById("teamKart").value;
+    if (!name) {
+      alert("Enter team name");
+      return;
+    }
+    teams.push({ name, kart });
+    renderTeams();
+  }
+
+  function renderTeams() {
+    const box = document.getElementById("teams");
+    box.innerHTML = "";
+    teams.forEach(t => {
+      const d = document.createElement("div");
+      d.className = "team";
+      d.innerText = t.name + " – Kart " + t.kart;
+      box.appendChild(d);
+    });
+  }
+
+  function buildPit() {
+    const r = Number(document.getElementById("rows").value);
+    const k = Number(document.getElementById("perRow").value);
+    pitRows = [];
+    for (let i = 0; i < r; i++) {
+      const row = [];
+      for (let j = 0; j < k; j++) row.push("");
+      pitRows.push(row);
+    }
+    renderPit();
+  }
+
+  function renderPit() {
+    const pit = document.getElementById("pit");
+    pit.innerHTML = "";
+    pitRows.forEach((row, idx) => {
+      const col = document.createElement("div");
+      col.className = "row";
+      row.forEach(k => {
+        const d = document.createElement("div");
+        d.className = "kart";
+        d.innerText = k;
+        col.appendChild(d);
+      });
+      const btn = document.createElement("button");
+      btn.innerText = "+";
+      btn.onclick = () => pitAction(idx);
+      col.appendChild(btn);
+      pit.appendChild(col);
+    });
+  }
+
+  function pitAction(rowIndex) {
+    if (teams.length === 0) {
+      alert("No teams added");
+      return;
+    }
+    const team = teams[0]; // simple test
+    pitRows[rowIndex].shift();
+    pitRows[rowIndex].push(team.kart);
+    renderPit();
+  }
+</script>
+
 </body>
 </html>
