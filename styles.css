@@ -14,7 +14,7 @@ section {
 }
 
 .team {
-  padding: 6px;
+  padding: 8px;
   color: white;
   border-radius: 4px;
 }
@@ -44,6 +44,6 @@ section {
 }
 
 button {
-  padding: 6px;
+  padding: 8px;
   margin-top: 6px;
 }
