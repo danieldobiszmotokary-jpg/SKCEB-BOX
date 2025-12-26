@@ -1,171 +1,157 @@
+// =====================
+// GLOBAL STATE
+// =====================
 let teams = [];
-let teamHistory = {};
-let teamCurrentKart = {};
-let selectedTeam = null;
-
 let pitRows = [];
-let kartIdCounter = 1;
 
-const colors = ["blue", "red", "orange", "yellow", "green", "purple"];
-
+// =====================
+// TEAM SETUP
+// =====================
 function addTeam() {
-  const name = document.getElementById("teamNameInput").value.trim();
-  const number = document.getElementById("teamNumberInput").value.trim();
+  const nameInput = document.getElementById("teamName");
+  const kartSelect = document.getElementById("teamKartSelect");
 
-  if (!name || !number) {
-    alert("Enter both team name and number");
+  const name = nameInput.value.trim();
+  const kartNumber = kartSelect.value;
+
+  if (!name || !kartNumber) {
+    alert("Select kart number and enter team name");
     return;
   }
 
-  teams.push({ name, number });
-  document.getElementById("teamNameInput").value = "";
-  document.getElementById("teamNumberInput").value = "";
-  renderTeamSetup();
-}
-
-function removeTeam(index) {
-  teams.splice(index, 1);
-  renderTeamSetup();
-}
-
-function renderTeamSetup() {
-  const list = document.getElementById("teamSetupList");
-  list.innerHTML = "";
-
-  teams.forEach((t, i) => {
-    const div = document.createElement("div");
-    div.className = "setup-team";
-    div.innerHTML = `${t.name} (#${t.number}) <span class="remove" onclick="removeTeam(${i})">✖</span>`;
-    list.appendChild(div);
-  });
-}
-
-function initialize() {
-  teamHistory = {};
-  teamCurrentKart = {};
-  pitRows = [];
-  kartIdCounter = 1;
-  selectedTeam = null;
-
-  teams.forEach(t => {
-    teamHistory[t.name] = [];
-    teamCurrentKart[t.name] = null;
-  });
-
-  const rowCount = parseInt(document.getElementById("rowCount").value);
-  const kartsPerRow = parseInt(document.getElementById("kartsPerRow").value);
-
-  for (let r = 0; r < rowCount; r++) {
-    let row = [];
-    for (let k = 0; k < kartsPerRow; k++) {
-      row.push({ id: kartIdCounter++, color: "blue" });
-    }
-    pitRows.push(row);
+  if (teams.find(t => t.kartNumber === kartNumber)) {
+    alert("Kart number already assigned");
+    return;
   }
 
-  document.getElementById("main").classList.remove("hidden");
-  render();
-}
+  teams.push({
+    name,
+    kartNumber,
+    color: "blue"
+  });
 
-function render() {
+  nameInput.value = "";
   renderTeams();
-  renderPits();
-  renderHistory();
 }
 
 function renderTeams() {
   const list = document.getElementById("teamList");
   list.innerHTML = "";
 
-  teams.forEach(t => {
+  teams.forEach(team => {
     const div = document.createElement("div");
-    div.className = "team" + (selectedTeam === t.name ? " active" : "");
-    div.textContent = `${t.name} (#${t.number})`;
-    div.onclick = () => {
-      selectedTeam = t.name;
-      render();
-    };
+    div.className = "team";
+    div.style.background = team.color;
+    div.textContent = `${team.name} — Kart ${team.kartNumber}`;
     list.appendChild(div);
   });
 }
 
-function renderPits() {
-  const pitLane = document.getElementById("pitLane");
-  pitLane.innerHTML = "";
+// =====================
+// PIT LANE SETUP
+// =====================
+function buildPitLane() {
+  const rows = parseInt(document.getElementById("rowCount").value);
+  const karts = parseInt(document.getElementById("kartsPerRow").value);
 
-  const container = document.createElement("div");
-  container.className = "pit-container";
+  if (isNaN(rows) || isNaN(karts)) {
+    alert("Invalid pit setup");
+    return;
+  }
+
+  pitRows = [];
+
+  for (let r = 0; r < rows; r++) {
+    const row = [];
+    for (let k = 0; k < karts; k++) {
+      row.push({
+        kartNumber: null,
+        color: "blue"
+      });
+    }
+    pitRows.push(row);
+  }
+
+  renderPitLane();
+}
+
+function renderPitLane() {
+  const container = document.getElementById("pitContainer");
+  container.innerHTML = "";
 
   pitRows.forEach((row, rowIndex) => {
     const rowDiv = document.createElement("div");
     rowDiv.className = "pit-row";
 
     row.forEach(kart => {
-      const div = document.createElement("div");
-      div.className = `kart ${kart.color}`;
-      div.textContent = kart.id;
-      div.onclick = () => cycleColor(kart);
-      rowDiv.appendChild(div);
+      const kartDiv = document.createElement("div");
+      kartDiv.className = "kart";
+      kartDiv.style.background = kart.color;
+      kartDiv.textContent = kart.kartNumber ?? "";
+      rowDiv.appendChild(kartDiv);
     });
 
-    const plus = document.createElement("div");
-    plus.className = "plus";
-    plus.textContent = "+";
-    plus.onclick = () => pitAction(rowIndex);
-    rowDiv.appendChild(plus);
+    const btn = document.createElement("button");
+    btn.textContent = "+";
+    btn.onclick = () => pitEntry(rowIndex);
+    rowDiv.appendChild(btn);
 
     container.appendChild(rowDiv);
   });
-
-  pitLane.appendChild(container);
 }
 
-function cycleColor(kart) {
-  kart.color = colors[(colors.indexOf(kart.color) + 1) % colors.length];
-  render();
-}
-
-function pitAction(rowIndex) {
-  if (!selectedTeam) {
-    alert("Select a team first");
+// =====================
+// PIT ENTRY LOGIC
+// =====================
+function pitEntry(rowIndex) {
+  if (teams.length === 0) {
+    alert("No teams available");
     return;
   }
+
+  const kartNumber = promptSelectKart();
+  if (!kartNumber) return;
+
+  const team = teams.find(t => t.kartNumber === kartNumber);
+  if (!team) return;
 
   const row = pitRows[rowIndex];
+
+  // Kart that team takes
   const takenKart = row.shift();
 
-  if (teamCurrentKart[selectedTeam]) {
-    row.push(teamCurrentKart[selectedTeam]);
-  }
+  // Team switches to taken kart (kart removed from pits)
+  team.color = takenKart.color;
 
-  teamCurrentKart[selectedTeam] = takenKart;
-  teamHistory[selectedTeam].push(takenKart);
-  render();
-}
-
-function renderHistory() {
-  const title = document.getElementById("historyTitle");
-  const content = document.getElementById("historyContent");
-
-  if (!selectedTeam) {
-    title.textContent = "Team History";
-    content.textContent = "Select a team";
-    return;
-  }
-
-  title.textContent = `History – ${selectedTeam}`;
-  content.innerHTML = "";
-
-  const container = document.createElement("div");
-  container.className = "history-karts";
-
-  teamHistory[selectedTeam].forEach(kart => {
-    const div = document.createElement("div");
-    div.className = `kart ${kart.color}`;
-    div.textContent = kart.id;
-    container.appendChild(div);
+  // Team's old kart goes to back of row
+  row.push({
+    kartNumber: team.kartNumber,
+    color: team.color
   });
 
-  content.appendChild(container);
+  renderTeams();
+  renderPitLane();
 }
 
+// =====================
+// SELECT UI (NO TYPING)
+// =====================
+function promptSelectKart() {
+  const options = teams.map(t => t.kartNumber).join(", ");
+  const selected = prompt(`Select kart number:\n${options}`);
+  return teams.find(t => t.kartNumber === selected) ? selected : null;
+}
+
+// =====================
+// INIT HELPERS
+// =====================
+function populateKartSelect(max = 50) {
+  const select = document.getElementById("teamKartSelect");
+  select.innerHTML = `<option value="">Select kart</option>`;
+  for (let i = 1; i <= max; i++) {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = i;
+    select.appendChild(opt);
+  }
+}
