@@ -3,26 +3,20 @@ body {
   padding: 10px;
 }
 
-section {
-  margin-bottom: 20px;
-}
-
 #teamList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  margin-bottom: 20px;
 }
 
 .team {
   padding: 8px;
+  margin-bottom: 4px;
+  background: #3498db;
   color: white;
-  border-radius: 4px;
 }
 
 #pitLane {
   display: flex;
   gap: 20px;
-  overflow-x: auto;
 }
 
 .row {
@@ -35,15 +29,9 @@ section {
   width: 60px;
   height: 60px;
   margin: 4px;
+  background: #3498db;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: bold;
-  border-radius: 6px;
-}
-
-button {
-  padding: 8px;
-  margin-top: 6px;
 }
