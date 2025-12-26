@@ -1,36 +1,38 @@
-// =====================
-// GLOBAL STATE
-// =====================
 let teams = [];
 let pitRows = [];
 
-// =====================
-// TEAM SETUP
-// =====================
+const colors = {
+  blue: "#3498db",
+  red: "#e74c3c",
+  orange: "#e67e22",
+  yellow: "#f1c40f",
+  green: "#2ecc71",
+  purple: "#9b59b6"
+};
+
+// Populate kart numbers dropdown
+const kartSelect = document.getElementById("teamKart");
+for (let i = 1; i <= 99; i++) {
+  const opt = document.createElement("option");
+  opt.value = i;
+  opt.textContent = i;
+  kartSelect.appendChild(opt);
+}
+
+// ADD TEAM
 function addTeam() {
-  const nameInput = document.getElementById("teamName");
-  const kartSelect = document.getElementById("teamKartSelect");
+  const name = document.getElementById("teamName").value.trim();
+  const kart = document.getElementById("teamKart").value;
 
-  const name = nameInput.value.trim();
-  const kartNumber = kartSelect.value;
-
-  if (!name || !kartNumber) {
-    alert("Select kart number and enter team name");
-    return;
-  }
-
-  if (teams.find(t => t.kartNumber === kartNumber)) {
-    alert("Kart number already assigned");
-    return;
-  }
+  if (!name) return alert("Enter team name");
 
   teams.push({
     name,
-    kartNumber,
+    kart,
     color: "blue"
   });
 
-  nameInput.value = "";
+  document.getElementById("teamName").value = "";
   renderTeams();
 }
 
@@ -38,36 +40,25 @@ function renderTeams() {
   const list = document.getElementById("teamList");
   list.innerHTML = "";
 
-  teams.forEach(team => {
+  teams.forEach(t => {
     const div = document.createElement("div");
     div.className = "team";
-    div.style.background = team.color;
-    div.textContent = `${team.name} — Kart ${team.kartNumber}`;
+    div.style.background = colors[t.color];
+    div.textContent = `${t.name} – Kart ${t.kart}`;
     list.appendChild(div);
   });
 }
 
-// =====================
-// PIT LANE SETUP
-// =====================
-function buildPitLane() {
-  const rows = parseInt(document.getElementById("rowCount").value);
-  const karts = parseInt(document.getElementById("kartsPerRow").value);
-
-  if (isNaN(rows) || isNaN(karts)) {
-    alert("Invalid pit setup");
-    return;
-  }
+// SETUP PIT LANE
+function setupPitLane() {
+  const rows = Number(document.getElementById("rowCount").value);
+  const perRow = Number(document.getElementById("kartsPerRow").value);
 
   pitRows = [];
-
   for (let r = 0; r < rows; r++) {
     const row = [];
-    for (let k = 0; k < karts; k++) {
-      row.push({
-        kartNumber: null,
-        color: "blue"
-      });
+    for (let k = 0; k < perRow; k++) {
+      row.push({ color: "blue", kart: null });
     }
     pitRows.push(row);
   }
@@ -76,82 +67,56 @@ function buildPitLane() {
 }
 
 function renderPitLane() {
-  const container = document.getElementById("pitContainer");
-  container.innerHTML = "";
+  const lane = document.getElementById("pitLane");
+  lane.innerHTML = "";
 
   pitRows.forEach((row, rowIndex) => {
-    const rowDiv = document.createElement("div");
-    rowDiv.className = "pit-row";
+    const col = document.createElement("div");
+    col.className = "row";
 
-    row.forEach(kart => {
-      const kartDiv = document.createElement("div");
-      kartDiv.className = "kart";
-      kartDiv.style.background = kart.color;
-      kartDiv.textContent = kart.kartNumber ?? "";
-      rowDiv.appendChild(kartDiv);
+    row.forEach(k => {
+      const div = document.createElement("div");
+      div.className = "kart";
+      div.style.background = colors[k.color];
+      div.textContent = k.kart ?? "";
+      col.appendChild(div);
     });
 
     const btn = document.createElement("button");
     btn.textContent = "+";
-    btn.onclick = () => pitEntry(rowIndex);
-    rowDiv.appendChild(btn);
+    btn.onclick = () => pitAction(rowIndex);
+    col.appendChild(btn);
 
-    container.appendChild(rowDiv);
+    lane.appendChild(col);
   });
 }
 
-// =====================
-// PIT ENTRY LOGIC
-// =====================
-function pitEntry(rowIndex) {
-  if (teams.length === 0) {
-    alert("No teams available");
-    return;
-  }
+// PIT ACTION
+function pitAction(rowIndex) {
+  if (teams.length === 0) return alert("No teams");
 
-  const kartNumber = promptSelectKart();
-  if (!kartNumber) return;
+  const choice = prompt(
+    "Enter kart number of team entering pits:\n" +
+    teams.map(t => t.kart).join(", ")
+  );
 
-  const team = teams.find(t => t.kartNumber === kartNumber);
-  if (!team) return;
+  const team = teams.find(t => t.kart === choice);
+  if (!team) return alert("Invalid kart");
 
   const row = pitRows[rowIndex];
 
-  // Kart that team takes
+  // Team takes first kart
   const takenKart = row.shift();
 
-  // Team switches to taken kart (kart removed from pits)
-  team.color = takenKart.color;
-
-  // Team's old kart goes to back of row
+  // Place team's current kart at back
   row.push({
-    kartNumber: team.kartNumber,
-    color: team.color
+    color: team.color,
+    kart: team.kart
   });
+
+  // Team inherits taken kart color
+  team.color = takenKart.color;
 
   renderTeams();
   renderPitLane();
-}
-
-// =====================
-// SELECT UI (NO TYPING)
-// =====================
-function promptSelectKart() {
-  const options = teams.map(t => t.kartNumber).join(", ");
-  const selected = prompt(`Select kart number:\n${options}`);
-  return teams.find(t => t.kartNumber === selected) ? selected : null;
-}
-
-// =====================
-// INIT HELPERS
-// =====================
-function populateKartSelect(max = 50) {
-  const select = document.getElementById("teamKartSelect");
-  select.innerHTML = `<option value="">Select kart</option>`;
-  for (let i = 1; i <= max; i++) {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = i;
-    select.appendChild(opt);
-  }
 }
