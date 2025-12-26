@@ -1,140 +1,97 @@
-document.addEventListener("DOMContentLoaded", () => {
+// GLOBAL STATE
+var teams = [];
+var pitRows = [];
 
-  let teams = [];
-  let pitRows = [];
+function addTeam() {
+  alert("Add Team clicked");
 
-  const colors = {
-    blue: "#3498db",
-    red: "#e74c3c",
-    orange: "#e67e22",
-    yellow: "#f1c40f",
-    green: "#2ecc71",
-    purple: "#9b59b6"
-  };
+  var name = document.getElementById("teamName").value;
+  var kart = document.getElementById("teamKart").value;
 
-  // Populate kart number dropdown
-  const kartSelect = document.getElementById("teamKart");
-  for (let i = 1; i <= 50; i++) {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.textContent = i;
-    kartSelect.appendChild(opt);
+  if (!name) {
+    alert("No team name");
+    return;
   }
 
-  // BUTTON REFERENCES
-  document.getElementById("addTeamBtn").onclick = addTeam;
-  document.getElementById("buildPitBtn").onclick = setupPitLane;
+  teams.push({
+    name: name,
+    kart: kart,
+    color: "blue"
+  });
 
-  function addTeam() {
-    const name = document.getElementById("teamName").value.trim();
-    const kart = document.getElementById("teamKart").value;
+  renderTeams();
+}
 
-    if (!name) {
-      alert("Please enter a team name");
-      return;
+function renderTeams() {
+  var list = document.getElementById("teamList");
+  list.innerHTML = "";
+
+  teams.forEach(function(team) {
+    var div = document.createElement("div");
+    div.className = "team";
+    div.innerText = team.name + " – Kart " + team.kart;
+    list.appendChild(div);
+  });
+}
+
+function setupPitLane() {
+  alert("Build Pit Lane clicked");
+
+  var rows = Number(document.getElementById("rowCount").value);
+  var perRow = Number(document.getElementById("kartsPerRow").value);
+
+  pitRows = [];
+
+  for (var r = 0; r < rows; r++) {
+    var row = [];
+    for (var k = 0; k < perRow; k++) {
+      row.push({ kart: "", color: "blue" });
     }
+    pitRows.push(row);
+  }
 
-    teams.push({
-      name,
-      kart,
-      color: "blue"
+  renderPitLane();
+}
+
+function renderPitLane() {
+  var lane = document.getElementById("pitLane");
+  lane.innerHTML = "";
+
+  pitRows.forEach(function(row, rowIndex) {
+    var col = document.createElement("div");
+    col.className = "row";
+
+    row.forEach(function(k) {
+      var div = document.createElement("div");
+      div.className = "kart";
+      div.innerText = k.kart;
+      col.appendChild(div);
     });
 
-    document.getElementById("teamName").value = "";
-    renderTeams();
+    var btn = document.createElement("button");
+    btn.innerText = "+";
+    btn.onclick = function() {
+      pitAction(rowIndex);
+    };
+    col.appendChild(btn);
+
+    lane.appendChild(col);
+  });
+}
+
+function pitAction(rowIndex) {
+  alert("Plus pressed on row " + (rowIndex + 1));
+
+  if (teams.length === 0) {
+    alert("No teams added");
+    return;
   }
 
-  function renderTeams() {
-    const list = document.getElementById("teamList");
-    list.innerHTML = "";
+  var team = teams[0]; // simple test behavior
 
-    teams.forEach(team => {
-      const div = document.createElement("div");
-      div.className = "team";
-      div.style.backgroundColor = colors[team.color];
-      div.textContent = `${team.name} – Kart ${team.kart}`;
-      list.appendChild(div);
-    });
-  }
+  var row = pitRows[rowIndex];
+  row.shift();
+  row.push({ kart: team.kart, color: "blue" });
 
-  function setupPitLane() {
-    const rows = Number(document.getElementById("rowCount").value);
-    const perRow = Number(document.getElementById("kartsPerRow").value);
-
-    if (!rows || !perRow) {
-      alert("Enter rows and karts per row");
-      return;
-    }
-
-    pitRows = [];
-
-    for (let r = 0; r < rows; r++) {
-      const row = [];
-      for (let k = 0; k < perRow; k++) {
-        row.push({ color: "blue", kart: "" });
-      }
-      pitRows.push(row);
-    }
-
-    renderPitLane();
-  }
-
-  function renderPitLane() {
-    const lane = document.getElementById("pitLane");
-    lane.innerHTML = "";
-
-    pitRows.forEach((row, rowIndex) => {
-      const col = document.createElement("div");
-      col.className = "row";
-
-      row.forEach(k => {
-        const div = document.createElement("div");
-        div.className = "kart";
-        div.style.backgroundColor = colors[k.color];
-        div.textContent = k.kart;
-        col.appendChild(div);
-      });
-
-      const btn = document.createElement("button");
-      btn.textContent = "+";
-      btn.onclick = () => pitAction(rowIndex);
-      col.appendChild(btn);
-
-      lane.appendChild(col);
-    });
-  }
-
-  function pitAction(rowIndex) {
-    if (teams.length === 0) {
-      alert("No teams available");
-      return;
-    }
-
-    const kartNumbers = teams.map(t => t.kart).join(", ");
-    const chosenKart = prompt(
-      `Enter kart number of team entering pits:\n${kartNumbers}`
-    );
-
-    const team = teams.find(t => t.kart === chosenKart);
-    if (!team) {
-      alert("Invalid kart number");
-      return;
-    }
-
-    const row = pitRows[rowIndex];
-
-    const takenKart = row.shift();
-
-    row.push({
-      color: team.color,
-      kart: team.kart
-    });
-
-    team.color = takenKart.color;
-
-    renderTeams();
-    renderPitLane();
-  }
-
-});
-
+  renderPitLane();
+}
