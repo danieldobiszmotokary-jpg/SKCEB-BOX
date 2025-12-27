@@ -24,8 +24,8 @@ button, select, input {
 }
 
 .team-box, .kart {
-  width:80px;
-  height:80px;
+  width:90px;
+  height:90px;
   border-radius:6px;
   display:flex;
   flex-direction:column;
@@ -65,9 +65,21 @@ button, select, input {
   font-size:10px;
 }
 
-.history {
+table {
+  border-collapse:collapse;
+  width:100%;
+  margin-bottom:15px;
+}
+
+th, td {
+  border:1px solid #444;
+  padding:4px 6px;
+  text-align:center;
   font-size:12px;
-  margin-bottom:10px;
+}
+
+th {
+  background:#222;
 }
 </style>
 </head>
@@ -185,7 +197,7 @@ function render() {
 function renderTeams() {
   const el = document.getElementById("teams");
   el.innerHTML="";
-  teams.forEach((t,ti)=>{
+  teams.forEach((t)=>{
     const d=document.createElement("div");
     d.className=`team-box ${t.color}`;
     d.innerHTML=`
@@ -248,12 +260,30 @@ function renderPits() {
 function renderHistory() {
   const el = document.getElementById("history");
   el.innerHTML="";
+
   teams.forEach(t=>{
-    const d=document.createElement("div");
-    d.className="history";
-    d.innerHTML=`<b>Team kart ${t.teamNumber}</b><br>` +
-      t.history.map(h=>`${h.kartId} (${h.color})`).join(" → ");
-    el.appendChild(d);
+    const table=document.createElement("table");
+
+    table.innerHTML=`
+      <caption><b>Team kart ${t.teamNumber} – ${t.name}</b></caption>
+      <tr>
+        <th>Stint #</th>
+        <th>Kart ID</th>
+        <th>Color</th>
+      </tr>
+    `;
+
+    t.history.forEach((h,i)=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${i+1}</td>
+        <td>${h.kartId}</td>
+        <td>${h.color}</td>
+      `;
+      table.appendChild(tr);
+    });
+
+    el.appendChild(table);
   });
 }
 
