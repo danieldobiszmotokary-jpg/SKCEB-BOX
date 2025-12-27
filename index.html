@@ -23,6 +23,7 @@ button, select, input {
   margin:4px 0;
 }
 
+/* ---------- TEAM & KART BOXES ---------- */
 .team-box, .kart {
   width:80px;
   height:80px;
@@ -36,6 +37,7 @@ button, select, input {
   text-align:center;
 }
 
+/* ---------- COLORS ---------- */
 .blue {background:#3498db;}
 .red {background:#e74c3c;}
 .orange {background:#e67e22;}
@@ -43,11 +45,17 @@ button, select, input {
 .green {background:#2ecc71;}
 .purple {background:#9b59b6;}
 
+/* ---------- PIT LAYOUT ---------- */
+#pits {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap; /* allows phone-friendly wrapping */
+}
+
 .row {
   display:flex;
   gap:12px;
   align-items:flex-start;
-  margin-bottom:20px;
 }
 
 .kart-column {
@@ -79,9 +87,7 @@ button, select, input {
 <section id="teamSetup"></section>
 
 <section>
-  <button onclick="
-    initialize();
-  ">Initialize Pit Lane</button>
+  <button onclick="initialize()">Initialize Pit Lane</button>
 </section>
 
 <hr>
@@ -125,7 +131,7 @@ function initialize() {
   rows = [];
   pitKartCounter = 1;
 
-  // Teams start on track with K1..Kn
+  // Teams start on track (K1..Kn)
   for (let i=0;i<tCount;i++) {
     teams.push({
       name: document.getElementById(`tname${i}`).value,
@@ -135,7 +141,7 @@ function initialize() {
     });
   }
 
-  // Pit karts P1..Pm
+  // Pit karts (P1..Pm)
   for (let r=0;r<rCount;r++) {
     const row = [];
     for (let k=0;k<kCount;k++) {
@@ -234,16 +240,9 @@ function pitStop(rowIndex, teamIndex) {
   const row = rows[rowIndex];
   const team = teams[teamIndex];
 
-  // Team takes first pit kart
-  const takenKart = row.shift();
+  const takenKart = row.shift(); // team takes front kart
+  row.push({ kartId: team.kartId, color: team.color }); // team leaves kart
 
-  // Team leaves its current kart at back
-  row.push({
-    kartId: team.kartId,
-    color: team.color
-  });
-
-  // Team switches to new kart
   team.kartId = takenKart.kartId;
   team.color = takenKart.color;
 
@@ -253,4 +252,3 @@ function pitStop(rowIndex, teamIndex) {
 
 </body>
 </html>
-
