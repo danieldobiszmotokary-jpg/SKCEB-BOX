@@ -23,15 +23,9 @@ button, select, input {
   margin:4px 0;
 }
 
-.setup-grid {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
-
 .team-box, .kart {
-  width:70px;
-  height:70px;
+  width:80px;
+  height:80px;
   border-radius:6px;
   display:flex;
   flex-direction:column;
@@ -39,6 +33,7 @@ button, select, input {
   justify-content:center;
   font-size:12px;
   border:2px solid #000;
+  text-align:center;
 }
 
 .blue {background:#3498db;}
@@ -84,12 +79,14 @@ button, select, input {
 <section id="teamSetup"></section>
 
 <section>
-  <button onclick="initialize()">Initialize Pit Lane</button>
+  <button onclick="
+    initialize();
+  ">Initialize Pit Lane</button>
 </section>
 
 <hr>
 
-<h2>Teams</h2>
+<h2>Teams (on track)</h2>
 <section id="teams"></section>
 
 <h2>Pit Lane</h2>
@@ -100,7 +97,9 @@ const COLORS = ["blue","red","orange","yellow","green","purple"];
 
 let teams = [];
 let rows = [];
+let pitKartCounter = 1;
 
+/* ---------- SETUP ---------- */
 function buildTeamInputs() {
   const count = +teamCount.value;
   const el = document.getElementById("teamSetup");
@@ -111,8 +110,8 @@ function buildTeamInputs() {
       <div>
         Team name:
         <input id="tname${i}" value="Team ${i+1}">
-        Kart #:
-        <input id="tkart${i}" value="${i+1}">
+        Team kart number:
+        <input id="tnumber${i}" value="${i+1}">
       </div>`;
   }
 }
@@ -124,19 +123,26 @@ function initialize() {
 
   teams = [];
   rows = [];
+  pitKartCounter = 1;
 
+  // Teams start on track with K1..Kn
   for (let i=0;i<tCount;i++) {
     teams.push({
       name: document.getElementById(`tname${i}`).value,
-      kart: document.getElementById(`tkart${i}`).value,
+      teamNumber: document.getElementById(`tnumber${i}`).value,
+      kartId: `K${i+1}`,
       color: "blue"
     });
   }
 
+  // Pit karts P1..Pm
   for (let r=0;r<rCount;r++) {
     const row = [];
     for (let k=0;k<kCount;k++) {
-      row.push({ kart: `P${r+1}-${k+1}`, color:"blue" });
+      row.push({
+        kartId: `P${pitKartCounter++}`,
+        color: "blue"
+      });
     }
     rows.push(row);
   }
@@ -144,6 +150,7 @@ function initialize() {
   render();
 }
 
+/* ---------- UI HELPERS ---------- */
 function colorSelect(current, onChange) {
   const s = document.createElement("select");
   COLORS.forEach(c=>{
@@ -157,6 +164,7 @@ function colorSelect(current, onChange) {
   return s;
 }
 
+/* ---------- RENDER ---------- */
 function render() {
   renderTeams();
   renderPits();
@@ -168,7 +176,11 @@ function renderTeams() {
   teams.forEach(t=>{
     const d=document.createElement("div");
     d.className=`team-box ${t.color}`;
-    d.innerHTML=`<b>${t.name}</b><div class="small">Kart ${t.kart}</div>`;
+    d.innerHTML=`
+      <b>${t.name}</b>
+      <div class="small">Team kart: ${t.teamNumber}</div>
+      <div class="small">Kart ID: ${t.kartId}</div>
+    `;
     d.appendChild(colorSelect(t.color,c=>{t.color=c;render();}));
     el.appendChild(d);
   });
@@ -188,7 +200,7 @@ function renderPits() {
     row.forEach(k=>{
       const d=document.createElement("div");
       d.className=`kart ${k.color}`;
-      d.textContent=k.kart;
+      d.innerHTML=`Kart ID<br><b>${k.kartId}</b>`;
       d.appendChild(colorSelect(k.color,c=>{k.color=c;render();}));
       col.appendChild(d);
     });
@@ -199,7 +211,7 @@ function renderPits() {
     teams.forEach((t,i)=>{
       const o=document.createElement("option");
       o.value=i;
-      o.textContent=t.name;
+      o.textContent=`Kart ${t.teamNumber}`;
       teamSel.appendChild(o);
     });
 
@@ -217,15 +229,23 @@ function renderPits() {
   });
 }
 
+/* ---------- PIT LOGIC ---------- */
 function pitStop(rowIndex, teamIndex) {
   const row = rows[rowIndex];
   const team = teams[teamIndex];
 
-  const frontKart = row.shift();     // team takes first
-  row.push({ kart: team.kart, color: team.color }); // team leaves kart
+  // Team takes first pit kart
+  const takenKart = row.shift();
 
-  team.kart = frontKart.kart;
-  team.color = frontKart.color;
+  // Team leaves its current kart at back
+  row.push({
+    kartId: team.kartId,
+    color: team.color
+  });
+
+  // Team switches to new kart
+  team.kartId = takenKart.kartId;
+  team.color = takenKart.color;
 
   render();
 }
@@ -233,3 +253,4 @@ function pitStop(rowIndex, teamIndex) {
 
 </body>
 </html>
+
