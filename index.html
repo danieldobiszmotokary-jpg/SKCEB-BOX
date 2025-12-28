@@ -75,10 +75,25 @@ th, td {
 }
 
 th { background:#222; }
+
+/* 🔒 Undo / Redo fixed controls */
+#historyControls {
+  position:fixed;
+  top:10px;
+  right:10px;
+  z-index:9999;
+  display:flex;
+  gap:6px;
+}
 </style>
 </head>
 
 <body>
+
+<div id="historyControls">
+  <button onclick="stepBack()">⬅</button>
+  <button onclick="stepForward()">➡</button>
+</div>
 
 <h2>Setup</h2>
 <section>
@@ -118,6 +133,40 @@ let reserveRow = [];
 let pitCounter = 1;
 let reserveCounter = 1;
 
+/* ---------- UNDO / REDO ---------- */
+let timeline = [];
+let timelineIndex = -1;
+
+function saveState() {
+  timeline = timeline.slice(0, timelineIndex + 1);
+  timeline.push(JSON.stringify({teams, rows, reserveRow, pitCounter, reserveCounter}));
+  timelineIndex++;
+}
+
+function loadState(index) {
+  const state = JSON.parse(timeline[index]);
+  teams = state.teams;
+  rows = state.rows;
+  reserveRow = state.reserveRow;
+  pitCounter = state.pitCounter;
+  reserveCounter = state.reserveCounter;
+  render();
+}
+
+function stepBack() {
+  if (timelineIndex > 0) {
+    timelineIndex--;
+    loadState(timelineIndex);
+  }
+}
+
+function stepForward() {
+  if (timelineIndex < timeline.length - 1) {
+    timelineIndex++;
+    loadState(timelineIndex);
+  }
+}
+
 /* ---------- SETUP ---------- */
 function buildTeamInputs() {
   const count = Number(teamCount.value);
@@ -141,6 +190,8 @@ function initialize() {
   reserveRow = [];
   pitCounter = 1;
   reserveCounter = 1;
+  timeline = [];
+  timelineIndex = -1;
 
   const tCount = Number(teamCount.value);
   const rCount = Number(rowCount.value);
@@ -165,6 +216,7 @@ function initialize() {
     rows.push(row);
   }
 
+  saveState();
   render();
 }
 
@@ -178,7 +230,7 @@ function colorSelect(current, cb) {
     if(c===current) o.selected=true;
     s.appendChild(o);
   });
-  s.onchange=e=>cb(e.target.value);
+  s.onchange=e=>{cb(e.target.value); saveState();};
   return s;
 }
 
@@ -200,9 +252,21 @@ function renderTeams() {
       <b>${t.name}</b>
       <div class="small">Team kart ${t.teamNumber}</div>
       <div class="small">${t.kartId}</div>`;
-    d.appendChild(colorSelect(t.color,c=>{t.color=c;render();}));
+    d.appendChild(colorSelect(t.color,c=>t.color=c));
     el.appendChild(d);
   });
+}
+
+function renderKart(kart, swapFn) {
+  const d=document.createElement("div");
+  d.className=`kart ${kart.color}`;
+  d.innerHTML=`<b>${kart.kartId}</b>`;
+  d.appendChild(colorSelect(kart.color,c=>kart.color=c));
+  const b=document.createElement("button");
+  b.textContent="Swap";
+  b.onclick=()=>{swapFn(); saveState();};
+  d.appendChild(b);
+  return d;
 }
 
 function renderPits() {
@@ -230,7 +294,7 @@ function renderPits() {
 
     const plus=document.createElement("button");
     plus.textContent="+";
-    plus.onclick=()=>pitStop(ri,Number(teamSel.value));
+    plus.onclick=()=>{pitStop(ri,Number(teamSel.value)); saveState();};
 
     rowDiv.appendChild(col);
     rowDiv.appendChild(teamSel);
@@ -254,23 +318,12 @@ function renderReserve() {
   plus.textContent="+";
   plus.onclick=()=>{
     reserveRow.push({kartId:`R${reserveCounter++}`,color:"blue"});
+    saveState();
     render();
   };
 
   el.appendChild(col);
   el.appendChild(plus);
-}
-
-function renderKart(kart, swapFn) {
-  const d=document.createElement("div");
-  d.className=`kart ${kart.color}`;
-  d.innerHTML=`<b>${kart.kartId}</b>`;
-  d.appendChild(colorSelect(kart.color,c=>{kart.color=c;render();}));
-  const b=document.createElement("button");
-  b.textContent="Swap";
-  b.onclick=swapFn;
-  d.appendChild(b);
-  return d;
 }
 
 function renderHistory() {
