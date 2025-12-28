@@ -18,12 +18,12 @@ section { margin-bottom:20px; }
 button, select {
   padding:6px;
   font-size:14px;
-  margin:4px 0;
+  margin-top:4px;
 }
 
 .team-box, .kart {
-  width:90px;
-  height:90px;
+  width:95px;
+  height:95px;
   border-radius:6px;
   display:flex;
   flex-direction:column;
@@ -43,13 +43,14 @@ button, select {
 
 #pits {
   display:flex;
-  gap:20px;
+  gap:25px;
   flex-wrap:wrap;
 }
 
 .row {
   display:flex;
-  gap:12px;
+  gap:10px;
+  align-items:flex-start;
 }
 
 .kart-column {
@@ -68,9 +69,9 @@ table {
 
 th, td {
   border:1px solid #444;
-  padding:4px 6px;
-  text-align:center;
+  padding:4px;
   font-size:12px;
+  text-align:center;
 }
 
 th { background:#222; }
@@ -87,6 +88,7 @@ th { background:#222; }
   <input id="rowCount" type="number" min="1" value="2">
   Karts per row:
   <input id="kartsPerRow" type="number" min="1" value="3">
+  <br>
   <button onclick="buildTeamInputs()">Next</button>
 </section>
 
@@ -109,13 +111,11 @@ const COLORS = ["blue","red","orange","yellow","green","purple"];
 
 let teams = [];
 let rows = [];
-let reserveRow = [];
 let pitCounter = 1;
-let reserveCounter = 1;
 
 /* ---------- SETUP ---------- */
 function buildTeamInputs() {
-  const count = Number(document.getElementById("teamCount").value);
+  const count = Number(teamCount.value);
   const el = document.getElementById("teamSetup");
   el.innerHTML = "<h3>Teams</h3>";
 
@@ -133,9 +133,7 @@ function buildTeamInputs() {
 function initialize() {
   teams = [];
   rows = [];
-  reserveRow = [];
   pitCounter = 1;
-  reserveCounter = 1;
 
   const tCount = Number(teamCount.value);
   const rCount = Number(rowCount.value);
@@ -160,10 +158,6 @@ function initialize() {
     rows.push(row);
   }
 
-  for (let i=0;i<2;i++) {
-    reserveRow.push({kartId:`R${reserveCounter++}`,color:"blue"});
-  }
-
   render();
 }
 
@@ -172,7 +166,8 @@ function colorSelect(current, cb) {
   const s=document.createElement("select");
   COLORS.forEach(c=>{
     const o=document.createElement("option");
-    o.value=c; o.textContent=c;
+    o.value=c;
+    o.textContent=c;
     if(c===current) o.selected=true;
     s.appendChild(o);
   });
@@ -193,9 +188,10 @@ function renderTeams() {
   teams.forEach(t=>{
     const d=document.createElement("div");
     d.className=`team-box ${t.color}`;
-    d.innerHTML=`<b>${t.name}</b>
-      <div class="small">Team Kart: ${t.teamNumber}</div>
-      <div class="small">Kart ID: ${t.kartId}</div>`;
+    d.innerHTML=`
+      <b>${t.name}</b>
+      <div class="small">Team kart ${t.teamNumber}</div>
+      <div class="small">${t.kartId}</div>`;
     d.appendChild(colorSelect(t.color,c=>{
       t.color=c;
       render();
@@ -208,31 +204,42 @@ function renderPits() {
   const el=document.getElementById("pits");
   el.innerHTML="";
 
-  [...rows, reserveRow].forEach((row,ri)=>{
+  rows.forEach((row,ri)=>{
     const rowDiv=document.createElement("div");
     rowDiv.className="row";
 
     const col=document.createElement("div");
     col.className="kart-column";
 
-    row.forEach(k=>{
+    row.forEach((k,ki)=>{
       const d=document.createElement("div");
       d.className=`kart ${k.color}`;
-      d.innerHTML=`${k.kartId}`;
+      d.innerHTML=`<b>${k.kartId}</b>`;
       d.appendChild(colorSelect(k.color,c=>{k.color=c;render();}));
+
+      const swapBtn=document.createElement("button");
+      swapBtn.textContent="Swap";
+      swapBtn.onclick=()=>swapKart(ri,ki);
+      d.appendChild(swapBtn);
+
       col.appendChild(d);
     });
 
-    const btn=document.createElement("button");
-    btn.textContent="+";
-    btn.onclick=()=>{
-      if(ri===rows.length){
-        reserveRow.push({kartId:`R${reserveCounter++}`,color:"blue"});
-      }
-    };
+    const teamSel=document.createElement("select");
+    teams.forEach((t,i)=>{
+      const o=document.createElement("option");
+      o.value=i;
+      o.textContent=`Team ${t.teamNumber}`;
+      teamSel.appendChild(o);
+    });
+
+    const plus=document.createElement("button");
+    plus.textContent="+";
+    plus.onclick=()=>pitStop(ri,Number(teamSel.value));
 
     rowDiv.appendChild(col);
-    rowDiv.appendChild(btn);
+    rowDiv.appendChild(teamSel);
+    rowDiv.appendChild(plus);
     el.appendChild(rowDiv);
   });
 }
@@ -244,23 +251,48 @@ function renderHistory() {
     const table=document.createElement("table");
     table.innerHTML=`<tr><th>#</th><th>Kart</th><th>Color</th></tr>`;
     t.history.forEach((h,i)=>{
-      table.innerHTML+=`<tr><td>${i+1}</td><td>${h.kartId}</td><td>${h.color}</td></tr>`;
+      table.innerHTML+=`
+        <tr><td>${i+1}</td><td>${h.kartId}</td><td>${h.color}</td></tr>`;
     });
     el.appendChild(table);
   });
 }
 
-/* ---------- PIT STOP ---------- */
+/* ---------- PIT LOGIC ---------- */
 function pitStop(rowIndex, teamIndex) {
-  const row=rows[rowIndex];
-  const team=teams[teamIndex];
+  const row = rows[rowIndex];
+  const team = teams[teamIndex];
 
-  const first=row.shift();
+  const first = row.shift();
   row.push({kartId:team.kartId,color:team.color});
 
-  team.kartId=first.kartId;
-  team.color=first.color;
+  team.kartId = first.kartId;
+  team.color = first.color;
   team.history.push({kartId:team.kartId,color:team.color});
+
+  render();
+}
+
+function swapKart(rowIndex, kartIndex) {
+  const options = [];
+  rows.forEach((r,ri)=>{
+    r.forEach((k,ki)=>{
+      if(!(ri===rowIndex && ki===kartIndex)){
+        options.push({ri,ki,label:k.kartId});
+      }
+    });
+  });
+
+  const choice = prompt(
+    "Swap with:\n" + options.map((o,i)=>`${i}: ${o.label}`).join("\n")
+  );
+  const sel = options[Number(choice)];
+  if(!sel) return;
+
+  const a = rows[rowIndex][kartIndex];
+  const b = rows[sel.ri][sel.ki];
+  rows[rowIndex][kartIndex] = b;
+  rows[sel.ri][sel.ki] = a;
 
   render();
 }
