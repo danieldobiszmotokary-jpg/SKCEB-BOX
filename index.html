@@ -15,7 +15,7 @@ body {
 
 section { margin-bottom:20px; }
 
-button, select {
+button, select, input {
   padding:6px;
   font-size:14px;
   margin-top:4px;
@@ -103,6 +103,9 @@ th { background:#222; }
 <h2>Pit Lane</h2>
 <section id="pits"></section>
 
+<h2>Reserve Row</h2>
+<section id="reserve"></section>
+
 <h2>Team Kart History</h2>
 <section id="history"></section>
 
@@ -111,7 +114,9 @@ const COLORS = ["blue","red","orange","yellow","green","purple"];
 
 let teams = [];
 let rows = [];
+let reserveRow = [];
 let pitCounter = 1;
+let reserveCounter = 1;
 
 /* ---------- SETUP ---------- */
 function buildTeamInputs() {
@@ -133,7 +138,9 @@ function buildTeamInputs() {
 function initialize() {
   teams = [];
   rows = [];
+  reserveRow = [];
   pitCounter = 1;
+  reserveCounter = 1;
 
   const tCount = Number(teamCount.value);
   const rCount = Number(rowCount.value);
@@ -161,7 +168,7 @@ function initialize() {
   render();
 }
 
-/* ---------- UI HELPERS ---------- */
+/* ---------- HELPERS ---------- */
 function colorSelect(current, cb) {
   const s=document.createElement("select");
   COLORS.forEach(c=>{
@@ -179,6 +186,7 @@ function colorSelect(current, cb) {
 function render() {
   renderTeams();
   renderPits();
+  renderReserve();
   renderHistory();
 }
 
@@ -192,10 +200,7 @@ function renderTeams() {
       <b>${t.name}</b>
       <div class="small">Team kart ${t.teamNumber}</div>
       <div class="small">${t.kartId}</div>`;
-    d.appendChild(colorSelect(t.color,c=>{
-      t.color=c;
-      render();
-    }));
+    d.appendChild(colorSelect(t.color,c=>{t.color=c;render();}));
     el.appendChild(d);
   });
 }
@@ -212,17 +217,7 @@ function renderPits() {
     col.className="kart-column";
 
     row.forEach((k,ki)=>{
-      const d=document.createElement("div");
-      d.className=`kart ${k.color}`;
-      d.innerHTML=`<b>${k.kartId}</b>`;
-      d.appendChild(colorSelect(k.color,c=>{k.color=c;render();}));
-
-      const swapBtn=document.createElement("button");
-      swapBtn.textContent="Swap";
-      swapBtn.onclick=()=>swapKart(ri,ki);
-      d.appendChild(swapBtn);
-
-      col.appendChild(d);
+      col.appendChild(renderKart(k,()=>swapKart({type:"pit",ri,ki})));
     });
 
     const teamSel=document.createElement("select");
@@ -244,6 +239,40 @@ function renderPits() {
   });
 }
 
+function renderReserve() {
+  const el=document.getElementById("reserve");
+  el.innerHTML="";
+
+  const col=document.createElement("div");
+  col.className="kart-column";
+
+  reserveRow.forEach((k,ki)=>{
+    col.appendChild(renderKart(k,()=>swapKart({type:"reserve",ki})));
+  });
+
+  const plus=document.createElement("button");
+  plus.textContent="+";
+  plus.onclick=()=>{
+    reserveRow.push({kartId:`R${reserveCounter++}`,color:"blue"});
+    render();
+  };
+
+  el.appendChild(col);
+  el.appendChild(plus);
+}
+
+function renderKart(kart, swapFn) {
+  const d=document.createElement("div");
+  d.className=`kart ${kart.color}`;
+  d.innerHTML=`<b>${kart.kartId}</b>`;
+  d.appendChild(colorSelect(kart.color,c=>{kart.color=c;render();}));
+  const b=document.createElement("button");
+  b.textContent="Swap";
+  b.onclick=swapFn;
+  d.appendChild(b);
+  return d;
+}
+
 function renderHistory() {
   const el=document.getElementById("history");
   el.innerHTML="";
@@ -251,14 +280,13 @@ function renderHistory() {
     const table=document.createElement("table");
     table.innerHTML=`<tr><th>#</th><th>Kart</th><th>Color</th></tr>`;
     t.history.forEach((h,i)=>{
-      table.innerHTML+=`
-        <tr><td>${i+1}</td><td>${h.kartId}</td><td>${h.color}</td></tr>`;
+      table.innerHTML+=`<tr><td>${i+1}</td><td>${h.kartId}</td><td>${h.color}</td></tr>`;
     });
     el.appendChild(table);
   });
 }
 
-/* ---------- PIT LOGIC ---------- */
+/* ---------- LOGIC ---------- */
 function pitStop(rowIndex, teamIndex) {
   const row = rows[rowIndex];
   const team = teams[teamIndex];
@@ -273,26 +301,24 @@ function pitStop(rowIndex, teamIndex) {
   render();
 }
 
-function swapKart(rowIndex, kartIndex) {
-  const options = [];
-  rows.forEach((r,ri)=>{
-    r.forEach((k,ki)=>{
-      if(!(ri===rowIndex && ki===kartIndex)){
-        options.push({ri,ki,label:k.kartId});
-      }
-    });
-  });
+function swapKart(from) {
+  const all = [];
 
-  const choice = prompt(
-    "Swap with:\n" + options.map((o,i)=>`${i}: ${o.label}`).join("\n")
-  );
-  const sel = options[Number(choice)];
-  if(!sel) return;
+  rows.forEach((r,ri)=>r.forEach((k,ki)=>all.push({type:"pit",ri,ki,k})));
+  reserveRow.forEach((k,ki)=>all.push({type:"reserve",ki,k}));
 
-  const a = rows[rowIndex][kartIndex];
-  const b = rows[sel.ri][sel.ki];
-  rows[rowIndex][kartIndex] = b;
-  rows[sel.ri][sel.ki] = a;
+  const list = all.map((o,i)=>`${i}: ${o.k.kartId}`).join("\n");
+  const sel = Number(prompt("Swap with:\n"+list));
+  if(isNaN(sel) || !all[sel]) return;
+
+  const a = from.type==="pit" ? rows[from.ri][from.ki] : reserveRow[from.ki];
+  const b = all[sel].type==="pit"
+    ? rows[all[sel].ri][all[sel].ki]
+    : reserveRow[all[sel].ki];
+
+  const temp = {...a};
+  Object.assign(a,b);
+  Object.assign(b,temp);
 
   render();
 }
